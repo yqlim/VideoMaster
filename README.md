@@ -14,11 +14,10 @@
 3. In your javascript, you can create a VideoMaster instance by:
 ```
 var myVideo = new VideoMaster({
-    parent: '#myVideoParent',   // Selector of parent element
-    /* OR */
-    parent: document.getElementById('myVideoParent'),
-
-    src: '',                    // Path to video.
+    // compulsory
+    src: '',                                                 // Path to video.
+    container: '#myVideoParent',                             // Either Selector of parent element
+    // container: document.getElementById('myVideoParent'),  // Or a DOM Element Node
     
     /* OPTIONAL */
     loop: false,                // Loop video onended.
