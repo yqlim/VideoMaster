@@ -320,6 +320,16 @@ class VideoMaster {
 
         this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
     }
+
+    addEventListener(){
+        const elem = this.useCanvas ? this.canvas : this.video;
+        elem.addEventListener.apply(null, arguments);
+    }
+
+    removeEventListener(){
+        const elem = this.useCanvas ? this.canvas : this.video;
+        elem.removeEventListener.apply(null, arguments);
+    }
     
     set currentTime(second){
         this.goTo(second);

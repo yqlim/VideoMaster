@@ -336,7 +336,17 @@
                 this.updateSize();
     
             this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
-        }
+        },
+
+        addEventListener: function(){
+            var elem = this.useCanvas ? this.canvas : this.video;
+            elem.addEventListener.apply(null, arguments);
+        },
+
+        removeEventListener: function(){
+            var elem = this.useCanvas ? this.canvas : this.video;
+            elem.removeEventListener.apply(null, arguments);
+        },
 
     };
     
