@@ -1,5 +1,5 @@
 ## VideoMaster
-##### A cross-platform video playing tool for interactive contents.
+#### A cross-platform video playing tool for interactive contents.
 
 
 ### How to use it?
@@ -7,21 +7,21 @@
 ```
 <script src="videomaster.js"></script>
 ```
-2. Be sure to have an element that will hold your video. For example:
+2. Be sure to have an element that will contain your video. For example:
 ```
-<div id="myVideoParent"></div>
+<div id="myContainer"></div>
 ```
 3. In your javascript, you can create a VideoMaster instance by:
 ```
 var myVideo = new VideoMaster({
-    // compulsory
-    src: '',                                                 // Path to video.
-    container: '#myVideoParent',                             // Either Selector of parent element
-    // container: document.getElementById('myVideoParent'),  // Or a DOM Element Node
+    /* compulsory*/
+    src: '',                                               // Path to video.
+    container: '#myContainer',                             // Either Selector of parent element
+    // container: document.getElementById('myContainer'),  // Or a DOM Element Node
     
     /* OPTIONAL */
     loop: false,                // Loop video onended.
-    audio: true,                // Mute video (can't be unmuted').
+    audio: true,                // If false, video will not have any audio.
     objectFit: 'cover',         // Accepted value: 'cover', 'contain'.
     forceCanvas: false,         // If true, use canvas element as video for all platform. This is always true on iOS device regardless of the option.
     resetOnEnded: false,        // Reset video frame to first frame onended.

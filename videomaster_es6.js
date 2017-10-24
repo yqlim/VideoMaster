@@ -20,7 +20,7 @@ class VideoMaster {
         this.config = {};
 
         // See try catch block below for valid value type for each property.
-        this.default = {
+        this.defaults = {
             container: document.body,
             src: '',
             format: 'mp4',
@@ -35,10 +35,10 @@ class VideoMaster {
             objectFit: 'cover'
         };
 
-        for (const key in this.default)
-            this.config[key] = custom[key] || this.default[key];
+        for (const key in this.defaults)
+            this.config[key] = custom[key] !== undefined ? custom[key] : this.defaults[key];
 
-        this.element = this.config.container;
+        this.element = typeof this.config.container === 'string' ? document.querySelector(this.config.container) : this.config.container;
 
         try {
             let err = '';
@@ -51,11 +51,11 @@ class VideoMaster {
 
             if (!this.element)
                 error('Container is not set or not found.');
-            else if (!/HTML\w*Element/i.test(this.config.container))
+            else if (!/HTML\w*Element/i.test(this.element))
                 error('Container is not a DOM Element.');
 
             if (!this.config.src || typeof this.config.src !== 'string')
-                error('Video source is either not found, invalid or not set.');
+                error('Video source is either not found, invalid, or not set.');
 
             typeOf({
                 format: 'string',
@@ -71,10 +71,9 @@ class VideoMaster {
             });
             
             if (err !== '')
-                throw new Error(error);
-
+                throw new Error(err);
         } catch(e){
-            console.error(error.replace(/\n$/, ''));
+            console.error(err.replace(/\n$/, ''));
             return;
         }
 
@@ -179,14 +178,17 @@ class VideoMaster {
         let adjustLeft = false,
             adjustTop = false;
 
-        this.width = this.element.clientWidth;
-        this.height = this.element.clientHeight;
+        this.width = cw;
+        this.height = this.config.objectFit ==='cover' ? ch : vh*(cw/vw);
+
+        this.video.setAttribute('width', this.width);
+        this.video.setAttribute('height', this.height);
         if (this.useCanvas){
             this.canvas.setAttribute('width', this.width);
             this.canvas.setAttribute('height', this.height);
         }
 
-        if (this.config.objectFit == 'cover'){
+        if (this.config.objectFit === 'cover'){
 
             scale = cw/vw;
             if (vh*scale < ch){
@@ -202,7 +204,7 @@ class VideoMaster {
                 adjustTop = true;
             }
 
-        } else if (this.config.objectFit == 'contain'){
+        } else if (this.config.objectFit === 'contain'){
 
             scale = cw/vw;
             if (vh*scale > ch){
@@ -221,20 +223,28 @@ class VideoMaster {
         }
 
         if (adjustTop)
-            t = (ch - rw)/2;
+            t = (ch - rh)/2;
 
         if (adjustLeft)
             l = (cw - rw)/2;
         
-        setSize(this.useCanvas ? this.canvas : this.video);
+        if (!this.useCanvas)
+            setSize.call(this, this.video);
+        else {
+            setSize.call(this, this.canvas);
+            // Hide video element after finished using its width and height
+            this.video.style.display = 'none';
+        }
 
         this.__sizeIsSet = true;
 
         function setSize(element){
             element.style.top = t + 'px';
             element.style.left = l + 'px';
-            element.style.width = rw + 'px';
-            element.style.height = rh + 'px';
+            if (this.config.objectFit === 'cover'){
+                element.style.width = rw + 'px';
+                element.style.height = rh + 'px';
+            }
         }
     }
 
@@ -255,6 +265,8 @@ class VideoMaster {
     }
 
     pause(){
+        if (this.config.canPause === false) return;
+
         this.playing = false;
 
         if (!this.useCanvas)
@@ -276,6 +288,7 @@ class VideoMaster {
             this.canvas.audio.currentTime = second;
     }
 
+    // Roll as in roll the frames like a movie
     roll(){
         const time = Date.now();
         const elapsed = (time - this.lastTime)/1000;
@@ -292,13 +305,13 @@ class VideoMaster {
 
         // Loop this method to imitate video play
         if (this.playing)
-            this.animationFrame = window.requestAnimationFrame(this.roll);
+            this.animationFrame = window.requestAnimationFrame(this.roll.bind(this));
         else
             window.cancelAnimationFrame(this.animationFrame);
     }
 
     sync(){
-        this.audio.currentTime = this.video.currentTime;
+        this.canvas.audio.currentTime = this.video.currentTime;
     }
 
     drawFrame(){

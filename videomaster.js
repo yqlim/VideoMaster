@@ -2,11 +2,14 @@
 
     'use strict';
 
-    var VideoMaster = function(config){
+    var VideoMaster = function(custom){
 
-        var error = '';
+        var err = '',
+            error,
+            typeOf;
 
         var i,
+            key,
             paused,
             videoName,
             canvasName,
@@ -14,79 +17,77 @@
             elemStyle,
             iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
-        this.inited = false;
-        this.sizeSet = false;
-        this.resized = false;
+        this.__hasInit = false;
+        this.__sizeIsSet = false;
+        this.__isResized = false;
         this.playing = false;
         this.useCanvas = false;
         this.ctx = undefined;
         this.element = undefined;
         this.video = undefined;
         this.canvas = undefined;
-        this.animationFrame = undefined;
+        this.animationFrame = null;
         this.lastTime = 0;
         this.width = 0;
         this.height = 0;
+        this.config = {};
 
         this.defaults = {
-            container: undefined,       // {"type": "HTMLElement",          "description": "container element of VideoMaster"}
+            container: document.body,   // {"type": "HTMLElement",          "description": "container element of VideoMaster"}
             src: undefined,             // {"type": "string",               "description": "video path"}
+            format: 'mp4',              // {"type": "string",               "description": "video format (e.g., mp4, flv, mkv, etc)"}
             loop: false,                // {"type": "boolean",              "description": "loop video onended"}
-            delay: false,               // {"type": "number || boolean",    "description": "delay video start time in milliseconds"}
+            delay: 0,                   // {"type": "number || boolean",    "description": "delay video start time in milliseconds"}
             audio: true,                // {"type": "boolean",              "description": "mute video, cannot be unmuted"}
             forceCanvas: false,         // {"type": "boolean",              "description": "force canvas element instead of video element on non-iOS devices"}
             resetOnEnded: false,        // {"type": "boolean",              "description": "if true set frame to first frame, else set frame to last frame"}
             initBy: 'click',            // {"type": "string",               "description": "custom mouse/touch event to start video"}
-            canPause: true,             // {"type": "boolean",              "description": "if true, video pause on 'initBy' event, else video cannot be paused"}
+            canPause: true,             // {"type": "boolean",              "description": "if true, video pauses on 'initBy' event, else video cannot be paused"}
             fps: 30,                    // {"type": "number",               "description": "frames per second"}
             objectFit: 'cover'          // {"type": "string",               "description": "accepted value: cover, contain, fill, scale-down, none"}
         };
 
-        // Extending default values and user config
-        this.config = function(out){
-            var i = 1,
-                len = arguments.length,
-                key,
-                obj;
-            out = out || {};
-            for (; i < len; i++){
-                obj = arguments[i];
-                if (!obj) continue;
-                for (key in obj)
-                    if (obj.hasOwnProperty(key))
-                        out[key] = (typeof obj[key] === 'object' && !/(HTML(\w{0,})Element)|Array/i.test(obj[key].constructor)) ? extend(out[key], obj[key])
-                                                                                                                                : obj[key];
-            }
-            return out;
-        }({}, this.defaults, config);
+        for (key in this.defaults)
+            this.config[key] = custom[key] || this.defaults[key];
 
-        this.element = this.config.container && /HTML\w{0,}Element/i.test(this.config.container.constructor) ? this.config.container : document.querySelector(this.config.container);
+        this.element = typeof this.config.container === 'string' ? document.querySelector(this.config.container) : this.config.container;
 
         try {
+            error = function(string){
+                err += string + '\n';
+            };
+            typeOf = function(pair){
+                var key;
+                for (key in pair)
+                    if (typeof this.config[key] !== pair[key])
+                        error('Invalid "' + key + '" value. Only ' + pair[key] + ' accepted.');
+            }.bind(this);
+
             if (!this.element)
-                error += 'Element is not set or not found.\n';
-            if (!this.config.src)
-                error += 'No video source detected.\n';
-            if (typeof this.config.src !== 'string')
-                error += 'Invalid video source value.\n';
-            if (typeof this.config.loop !== 'boolean')
-                error += 'Invalid "loop" value. Only boolean accepted.\n';
-            if (typeof this.config.delay !== 'number' && this.config.delay !== false)
-                error += 'Invalid "delay" value. Only value of type "number" or false boolean accepted.\n';
-            if (typeof this.config.audio !== 'boolean')
-                error += 'Invalid "audio" value. Only boolean accepted.\n';
-            if (typeof this.config.forceCanvas !== 'boolean')
-                error += 'Invalid "forceCanvas" value. Only boolean accepted.\n';
-            if (typeof this.config.resetOnEnded !== 'boolean')
-                error += 'Invalid "resetOnEnded" value. Only boolean accepted.\n';
-            if (typeof this.config.initBy !== 'string')
-                error += 'Invalid "initBy" value. Only string.accepted.\n';
-            if (typeof this.config.canPause !== 'boolean')
-                error += 'Invalid "canPause" value. Only boolean accepted.\n';
-            if (error !== '')
-                throw new Error(error);
+                err += 'Element is not set or not found.\n';
+            else if (!/HTML\w*Element/i.test(this.element))
+                err += 'Container is not a DOM Element.\n';
+
+            if (!this.config.src || typeof this.config.src !== 'string')
+                err += 'Video source is either not found, invalid, or not set.\n';
+
+            typeOf({
+                format: 'string',
+                loop: 'boolean',
+                delay: 'number',
+                audio: 'boolean',
+                forceCanvas: 'boolean',
+                resetOnEnded: 'boolean',
+                initBy: 'string',
+                canPause: 'boolean',
+                fps: 'number',
+                objectFit: 'string',
+            });
+
+            if (err !== '')
+                throw new Error(err);
         } catch(e){
-            console.error(error.replace(/\n$/, ''));
+            console.error(err.replace(/\n$/, ''));
             return;
         }
 
@@ -97,14 +98,15 @@
         elemStyle = window.getComputedStyle(this.element);
 
         this.element.style.overflow = 'hidden';
-        if (elemStyle.position === 'static') this.element.style.position = 'relative';
+        if (elemStyle.position === 'static')
+            this.element.style.position = 'relative';
 
         // Creating video element
-        videoName = this.element.id + (this.element.id.length > 0 ? '-' : '') + 'VideoMaster';
+        videoName = this.element.id + (!this.element.id ? '' : '-') + 'VideoMaster';
         this.video = document.createElement('video');
         this.video.setAttribute('id', videoName);
         this.video.style.position = 'absolute';
-        this.video.innerHTML = '<source src="' + this.config.src + '" type="video/mp4">';
+        this.video.innerHTML = '<source src="' + this.config.src + '" type="video/' + this.config.format + '">';
         this.element.appendChild(this.video);
 
         // Creating canvas element
@@ -158,20 +160,27 @@
     };
 
     VideoMaster.prototype.init = function(){
-        if (!this.sizeSet) this.updateSize();
-        if (this.inited && this.config.canPause === true){
+        if (!this.__sizeIsSet)
+            this.updateSize();
+
+        if (this.__hasInit && this.config.canPause === true){
             this.togglePlay();
             return;
         }
-        if (this.useCanvas) this.video.style.display = 'none';
-        this.inited = true;
+
+        if (this.useCanvas)
+            this.video.style.display = 'none';
+
+        this.__hasInit = true;
         this.play();
-        if (this.config.audio === false) this.video.volume = 0;
+
+        if (this.config.audio === false)
+            this.video.volume = 0;
     };
 
     VideoMaster.prototype.updateSize = function(){
-        if (this.video.videoHeight == 0){
-            this.resized = true;
+        if (this.video.videoHeight === 0){
+            this.__isResized = true;
             return;
         }
             
@@ -184,14 +193,17 @@
         var adjustLeft = false,
             adjustTop = false;
 
-        this.width = this.element.clientWidth;
-        this.height = this.element.clientHeight;
+        this.width = cw;
+        this.height = this.config.objectFit ==='cover' ? ch : vh*(cw/vw);
+
+        this.video.setAttribute('width', this.width);
+        this.video.setAttribute('height', this.height);
         if (this.useCanvas){
             this.canvas.setAttribute('width', this.width);
             this.canvas.setAttribute('height', this.height);
         }
 
-        if (this.config.objectFit == 'cover'){
+        if (this.config.objectFit === 'cover'){
 
             scale = cw/vw;
             if (vh*scale < ch){
@@ -207,7 +219,7 @@
                 adjustTop = true;
             }
 
-        } else if (this.config.objectFit == 'contain'){
+        } else if (this.config.objectFit === 'contain'){
 
             scale = cw/vw;
             if (vh*scale > ch){
@@ -226,38 +238,50 @@
         }
 
         if (adjustTop)
-            t = (ch - rw)/2;
+            t = (ch - rh)/2;
 
         if (adjustLeft)
             l = (cw - rw)/2;
-        
-        setSize(this.useCanvas ? this.canvas : this.video);
 
-        this.sizeSet = true;
+        if (!this.useCanvas)
+            setSize.call(this, this.video);
+        else {
+            setSize.call(this, this.canvas);
+            // Hide video element after finished using its width and height
+            this.video.style.display = 'none';
+        }
+
+        this.__sizeIsSet = true;
 
         function setSize(element){
             element.style.top = t + 'px';
             element.style.left = l + 'px';
-            element.style.width = rw + 'px';
-            element.style.height = rh + 'px';
-        }
+            if (this.config.objectFit === 'cover'){
+                element.style.width = rw + 'px';
+                element.style.height = rh + 'px';
+            }
+        };
     };
 
     VideoMaster.prototype.play = function(){
         this.playing = true;
 
-        if (!this.sizeSet) this.updateSize();
+        if (!this.__sizeIsSet)
+            this.updateSize();
 
         if (!this.useCanvas)
             this.video.play();
         else {
             this.lastTime = Date.now();
             this.roll();
-            if (this.config.audio !== false) this.canvas.audio.play();
+            if (this.config.audio !== false)
+                this.canvas.audio.play();
         }
     };
 
     VideoMaster.prototype.pause = function(){
+        if (this.config.canPause === false) return;
+
         this.playing = false;
 
         if (!this.useCanvas)
@@ -279,9 +303,9 @@
             this.canvas.audio.currentTime = second;
     };
 
+    // Roll as in roll the frames like a movie
     VideoMaster.prototype.roll = function(){
-        var ev,
-            time = Date.now(),
+        var time = Date.now(),
             elapsed = (time - this.lastTime)/1000;
 
         // Move video frame forward
@@ -296,19 +320,19 @@
 
         // Loop this method to imitate video play
         if (this.playing)
-            this.animationFrame = requestAnimationFrame(function(){
-                this.roll();
-            }.bind(this));
+            this.animationFrame = window.requestAnimationFrame(this.roll.bind(this));
         else
-            cancelAnimationFrame(this.animationFrame);
+            window.cancelAnimationFrame(this.animationFrame);
     };
 
     VideoMaster.prototype.sync = function(){
-        this.audio.currentTime = this.video.currentTime;
+        this.canvas.audio.currentTime = this.video.currentTime;
     };
 
     VideoMaster.prototype.drawFrame = function(){
-        if (parseInt(this.width) === 0) this.updateSize();
+        if (parseInt(this.width) === 0)
+            this.updateSize();
+
         this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
     };
     
