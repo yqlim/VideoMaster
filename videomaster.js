@@ -48,7 +48,7 @@
         };
 
         for (key in this.defaults)
-            this.config[key] = custom[key] || this.defaults[key];
+            this.config[key] = custom[key] !== undefined ? custom[key] : this.defaults[key];
 
         this.element = typeof this.config.container === 'string' ? document.querySelector(this.config.container) : this.config.container;
 
@@ -106,7 +106,7 @@
         this.video = document.createElement('video');
         this.video.setAttribute('id', videoName);
         this.video.style.position = 'absolute';
-        this.video.innerHTML = '<source src="' + this.config.src + '" type="video/' + this.config.format + '">';
+        this.video.innerHTML = '<source src="' + this.config.src + '" type="video/' + (this.config.format  || this.config.src.split('.').pop()) + '">';
         this.element.appendChild(this.video);
 
         // Creating canvas element
@@ -159,181 +159,185 @@
 
     };
 
-    VideoMaster.prototype.init = function(){
-        if (!this.__sizeIsSet)
-            this.updateSize();
+    VideoMaster.prototype = {
 
-        if (this.__hasInit && this.config.canPause === true){
-            this.togglePlay();
-            return;
-        }
-
-        if (this.useCanvas)
-            this.video.style.display = 'none';
-
-        this.__hasInit = true;
-        this.play();
-
-        if (this.config.audio === false)
-            this.video.volume = 0;
-    };
-
-    VideoMaster.prototype.updateSize = function(){
-        if (this.video.videoHeight === 0){
-            this.__isResized = true;
-            return;
-        }
-            
-        var rw, rh, rt, rl, scale, t, l;
-        var cw = this.element.clientWidth,
-            ch = this.element.clientHeight,
-            vw = this.video.videoWidth,
-            vh = this.video.videoHeight;
-
-        var adjustLeft = false,
-            adjustTop = false;
-
-        this.width = cw;
-        this.height = this.config.objectFit ==='cover' ? ch : vh*(cw/vw);
-
-        this.video.setAttribute('width', this.width);
-        this.video.setAttribute('height', this.height);
-        if (this.useCanvas){
-            this.canvas.setAttribute('width', this.width);
-            this.canvas.setAttribute('height', this.height);
-        }
-
-        if (this.config.objectFit === 'cover'){
-
-            scale = cw/vw;
-            if (vh*scale < ch){
-                scale = ch/vh;
-                rw = vw*scale;
-                rh = ch;
-                t = 0;
-                adjustLeft = true;
-            } else {
-                rw = cw;
-                rh = vh*scale;
-                l = 0;
-                adjustTop = true;
+        init: function(){
+            if (!this.__sizeIsSet)
+                this.updateSize();
+    
+            if (this.__hasInit && this.config.canPause === true){
+                this.togglePlay();
+                return;
             }
-
-        } else if (this.config.objectFit === 'contain'){
-
-            scale = cw/vw;
-            if (vh*scale > ch){
-                scale = ch/vh;
-                rw = vw*scale;
-                rh = ch;
-                t = 0;
-                adjustLeft = true;
-            } else {
-                rw = cw;
-                rh = vh*scale;
-                l = 0;
-                adjustTop = true;
-            }
-
-        }
-
-        if (adjustTop)
-            t = (ch - rh)/2;
-
-        if (adjustLeft)
-            l = (cw - rw)/2;
-
-        if (!this.useCanvas)
-            setSize.call(this, this.video);
-        else {
-            setSize.call(this, this.canvas);
-            // Hide video element after finished using its width and height
-            this.video.style.display = 'none';
-        }
-
-        this.__sizeIsSet = true;
-
-        function setSize(element){
-            element.style.top = t + 'px';
-            element.style.left = l + 'px';
-            if (this.config.objectFit === 'cover'){
-                element.style.width = rw + 'px';
-                element.style.height = rh + 'px';
-            }
-        };
-    };
-
-    VideoMaster.prototype.play = function(){
-        this.playing = true;
-
-        if (!this.__sizeIsSet)
-            this.updateSize();
-
-        if (!this.useCanvas)
-            this.video.play();
-        else {
-            this.lastTime = Date.now();
-            this.roll();
-            if (this.config.audio !== false)
-                this.canvas.audio.play();
-        }
-    };
-
-    VideoMaster.prototype.pause = function(){
-        if (this.config.canPause === false) return;
-
-        this.playing = false;
-
-        if (!this.useCanvas)
-            this.video.pause();
-        else
-            this.canvas.audio.pause();
-    };
-
-    VideoMaster.prototype.togglePlay = function(){
-        if (this.paused)
+    
+            if (this.useCanvas)
+                this.video.style.display = 'none';
+    
+            this.__hasInit = true;
             this.play();
-        else
-            this.pause();
-    };
+    
+            if (this.config.audio === false)
+                this.video.volume = 0;
+        },
 
-    VideoMaster.prototype.goTo = function(second){
-        this.video.currentTime = second;
-        if (this.useCanvas)
-            this.canvas.audio.currentTime = second;
-    };
+        updateSize: function(){
+            if (this.video.videoHeight === 0){
+                this.__isResized = true;
+                return;
+            }
+                
+            var rw, rh, rt, rl, scale, t, l;
+            var cw = this.element.clientWidth,
+                ch = this.element.clientHeight,
+                vw = this.video.videoWidth,
+                vh = this.video.videoHeight;
+    
+            var adjustLeft = false,
+                adjustTop = false;
+    
+            this.width = cw;
+            this.height = this.config.objectFit ==='cover' ? ch : vh*(cw/vw);
+    
+            this.video.setAttribute('width', this.width);
+            this.video.setAttribute('height', this.height);
+            if (this.useCanvas){
+                this.canvas.setAttribute('width', this.width);
+                this.canvas.setAttribute('height', this.height);
+            }
+    
+            if (this.config.objectFit === 'cover'){
+    
+                scale = cw/vw;
+                if (vh*scale < ch){
+                    scale = ch/vh;
+                    rw = vw*scale;
+                    rh = ch;
+                    t = 0;
+                    adjustLeft = true;
+                } else {
+                    rw = cw;
+                    rh = vh*scale;
+                    l = 0;
+                    adjustTop = true;
+                }
+    
+            } else if (this.config.objectFit === 'contain'){
+    
+                scale = cw/vw;
+                if (vh*scale > ch){
+                    scale = ch/vh;
+                    rw = vw*scale;
+                    rh = ch;
+                    t = 0;
+                    adjustLeft = true;
+                } else {
+                    rw = cw;
+                    rh = vh*scale;
+                    l = 0;
+                    adjustTop = true;
+                }
+    
+            }
+    
+            if (adjustTop)
+                t = (ch - rh)/2;
+    
+            if (adjustLeft)
+                l = (cw - rw)/2;
+    
+            if (!this.useCanvas)
+                setSize.call(this, this.video);
+            else {
+                setSize.call(this, this.canvas);
+                // Hide video element after finished using its width and height
+                this.video.style.display = 'none';
+            }
+    
+            this.__sizeIsSet = true;
+    
+            function setSize(element){
+                element.style.top = t + 'px';
+                element.style.left = l + 'px';
+                if (this.config.objectFit === 'cover'){
+                    element.style.width = rw + 'px';
+                    element.style.height = rh + 'px';
+                }
+            };
+        },
 
-    // Roll as in roll the frames like a movie
-    VideoMaster.prototype.roll = function(){
-        var time = Date.now(),
-            elapsed = (time - this.lastTime)/1000;
+        play: function(){
+            this.playing = true;
+    
+            if (!this.__sizeIsSet)
+                this.updateSize();
+    
+            if (!this.useCanvas)
+                this.video.play();
+            else {
+                this.lastTime = Date.now();
+                this.roll();
+                if (this.config.audio !== false)
+                    this.canvas.audio.play();
+            }
+        },
 
-        // Move video frame forward
-        if (elapsed >= (1/this.config.fps)){
-            this.video.currentTime = this.video.currentTime + elapsed;
-            this.lastTime = time;
+        pause: function(){
+            if (this.config.canPause === false) return;
+    
+            this.playing = false;
+    
+            if (!this.useCanvas)
+                this.video.pause();
+            else
+                this.canvas.audio.pause();
+        },
 
-            // Sync audio with current video frame
-            if (this.canvas.audio && Math.abs(this.canvas.audio.currentTime - this.video.currentTime) > 0.3)
-                this.sync();
+        togglePlay: function(){
+            if (this.paused)
+                this.play();
+            else
+                this.pause();
+        },
+
+        goTo: function(second){
+            this.video.currentTime = second;
+            if (this.useCanvas)
+                this.canvas.audio.currentTime = second;
+        },
+
+        // Roll as in roll the frames like a movie film
+        roll: function(){
+            var time = Date.now(),
+                elapsed = (time - this.lastTime)/1000;
+    
+            // Move video frame forward
+            if (elapsed >= (1/this.config.fps)){
+                this.video.currentTime = this.video.currentTime + elapsed;
+                this.lastTime = time;
+    
+                // Sync audio with current video frame
+                if (this.canvas.audio && Math.abs(this.canvas.audio.currentTime - this.video.currentTime) > 0.3)
+                    this.sync();
+            }
+    
+            // Loop this method to imitate video play
+            if (this.playing)
+                this.animationFrame = window.requestAnimationFrame(this.roll.bind(this));
+            else
+                window.cancelAnimationFrame(this.animationFrame);
+        },
+
+        sync: function(){
+            this.canvas.audio.currentTime = this.video.currentTime;
+        },
+
+        drawFrame: function(){
+            if (parseInt(this.width) === 0)
+                this.updateSize();
+    
+            this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
         }
 
-        // Loop this method to imitate video play
-        if (this.playing)
-            this.animationFrame = window.requestAnimationFrame(this.roll.bind(this));
-        else
-            window.cancelAnimationFrame(this.animationFrame);
-    };
-
-    VideoMaster.prototype.sync = function(){
-        this.canvas.audio.currentTime = this.video.currentTime;
-    };
-
-    VideoMaster.prototype.drawFrame = function(){
-        if (parseInt(this.width) === 0)
-            this.updateSize();
-
-        this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
     };
     
     Object.defineProperties(VideoMaster.prototype, {

@@ -22,7 +22,7 @@ class VideoMaster {
         // See try catch block below for valid value type for each property.
         this.defaults = {
             container: document.body,
-            src: '',
+            src: undefined,
             format: 'mp4',
             loop: false,
             delay: 0,
@@ -93,7 +93,7 @@ class VideoMaster {
         this.video = document.createElement('video');
         this.video.setAttribute('id', videoName);
         this.video.style.position = 'absolute';
-        this.video.innerHTML = `<source src="${this.config.src}" type="video/${this.config.format}">`;
+        this.video.innerHTML = `<source src="${this.config.src}" type="video/${this.config.format || this.config.src.split('.').pop()}">`;
         this.element.appendChild(this.video);
 
         // Create canvas element, if needed
