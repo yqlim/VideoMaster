@@ -38,6 +38,8 @@ var myVideo = new VideoMaster({
 - `myVideo.currentTime`: Get your video's `currentTime`. Use `myVideo.currentTime = seconds` to achieve same effect as `myVideo.goTo(seconds)`.
 - `myVideo.paused`: Check if your video is paused. Returns true if paused.
 - `myVideo.duration`: Returns your video total duration in seconds.
+- `myVideo.addEventListener`: Attach events to it easily.
+- `myVideo.removeEventListener`: Remove events from it easily.
 
 
 ### When can I use it?
