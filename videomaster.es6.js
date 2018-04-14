@@ -40,7 +40,9 @@
                     canPause: true,
                     objectFit: 'cover',
                     controls: true,
-                    onended: function(){}
+                    onended: function(){},
+                    keyboard: true,
+                    keyboardFactor: 5
                 }),
                 ctx: describe(null, true),
                 element: describe(null, true),
@@ -96,7 +98,9 @@
                     canPause: 'boolean',
                     objectFit: 'string',
                     controls: 'boolean',
-                    onended: 'function'
+                    onended: 'function',
+                    keyboard: 'boolean',
+                    keyboardFactor: 'number'
                 });
 
                 if (err.length)
@@ -164,6 +168,9 @@
             this.element.addEventListener(this.config.trigger, this.init.bind(this));
             window.addEventListener('resize', this.updateSize.bind(this));
 
+            if (this.config.keyboard === true)
+                document.body.addEventListener('keydown', onKeyPress.bind(this));
+
 
             this.video.load();
 
@@ -184,6 +191,15 @@
                     if (this.config.resetOnEnded === true)
                         this.goTo(0);
                 }
+            }
+
+            function onKeyPress(e){
+                if (e.which === 32)
+                    this.togglePlay();
+                else if (e.which === 37)
+                    this.goTo(this.currentTime + this.config.keyboardFactor);
+                else if (e.which === 39)
+                    this.goTo(this.currentTime - this.config.keyboardFactor);
             }
 
         }
