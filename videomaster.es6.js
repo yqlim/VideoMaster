@@ -152,7 +152,6 @@
                 // To play frames
                 this.video.addEventListener('timeupdate', this.drawFrame.bind(this));
                 this.video.addEventListener('canplay', this.drawFrame.bind(this));
-                window.addEventListener('resize', this.drawFrame.bind(this));
             }
 
 
@@ -276,6 +275,7 @@
                 setSize.call(this, this.video);
             else {
                 setSize.call(this, this.canvas);
+                this.drawFrame();
                 // Hide video element because it is not needed in layout anymore
                 this.video.style.display = 'none';
             }
@@ -341,7 +341,7 @@
         goTo(second){
             this.video.currentTime = second;
             if (this.config.useCanvas)
-                this.canvas.audio.currentTime = second;
+                this.sync();
         }
 
         // Roll as in roll the frames like a movie film
