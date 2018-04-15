@@ -184,6 +184,8 @@
                 this.state.ended = true;
 
                 if (this.config.loop === true){
+                    // Do not replay video if it is paused and progress is controlled by keyboard
+                    if (this.state.playing !== true) return;
                     this.goTo(0);
                     this.play();
                 } else {
@@ -194,12 +196,15 @@
             }
 
             function onKeyPress(e){
+                // Keyboard cannot control video before video is triggered.
+                if (this.state.inited !== true) return;
+
                 if (e.which === 32)
                     this.togglePlay();
                 else if (e.which === 37)
-                    this.goTo(this.currentTime + this.config.keyboardFactor);
-                else if (e.which === 39)
                     this.goTo(this.currentTime - this.config.keyboardFactor);
+                else if (e.which === 39)
+                    this.goTo(this.currentTime + this.config.keyboardFactor);
             }
 
         }
@@ -390,9 +395,6 @@
         }
 
         drawFrame(){
-            if (parseInt(this.width) === 0)
-                this.updateSize();
-
             // Draw the current frame onto canvas
             this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
         }
