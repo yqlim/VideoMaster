@@ -63,6 +63,8 @@ You can use it when:
 
 And more.
 
+### Future Plans
+1. Add video controls support.
 
 ### Appreciation
 This project is inspired by:
