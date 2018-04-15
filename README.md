@@ -48,7 +48,7 @@ var myVideo = new VideoMaster({
 - `myVideo.currentTime`: Get your video's `currentTime`. Use `myVideo.currentTime = seconds` to achieve same effect as `myVideo.goTo(seconds)`.
 - `myVideo.paused`: Check if your video is paused. Returns true if paused.
 - `myVideo.duration`: Returns your video total duration in seconds.
-- 
+
 5. Keyboard shortcuts:
 - `space` key: Toggle play/pause.
 - `left` arrow key: Rewind video to _n_ seconds before.
