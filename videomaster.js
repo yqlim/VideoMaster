@@ -48,10 +48,10 @@
                 err.push(string);
             },
             checkType = function(pair){
-                var k;
-                for (k in pair)
+                var key;
+                for (key in pair)
                     if (typeof this.config[key] !== pair[key])
-                        error('Invalid ' + key + ' value. Only ' + pair[key] + 'accepted.');
+                        error('Invalid ' + key + ' value. Only ' + pair[key] + ' accepted.');
             }.bind(this);
 
 
