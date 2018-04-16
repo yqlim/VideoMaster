@@ -208,7 +208,6 @@
         }
 
         function onVideoEnded(){
-            this.state.playing = false;
             this.state.ended = true;
 
             if (this.config.loop === true){

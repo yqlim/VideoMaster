@@ -54,18 +54,15 @@
 
 
             // Use custom config
-            for (const key in config){
+            for (const key in config)
                 this.config[key] = config[key];
-            }
 
 
             try {
 
                 let err = [];
 
-                const error = string => {
-                    err.push(string)
-                };
+                const error = string => err.push(string);
                 const checkType = pair => {
                     for (const key in pair)
                         if (typeof this.config[key] !== pair[key])
@@ -180,12 +177,13 @@
             }
 
             function onVideoEnded(){
-                this.state.playing = false;
                 this.state.ended = true;
 
                 if (this.config.loop === true){
                     // Do not replay video if it is paused and progress is controlled by keyboard
-                    if (this.state.playing !== true) return;
+                    if (this.state.playing !== true)
+                        return;
+                        
                     this.goTo(0);
                     this.play();
                 } else {
