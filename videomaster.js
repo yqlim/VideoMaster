@@ -73,7 +73,7 @@
                 src: null,
                 loop: false,
                 delay: 0,
-                audio: true,
+                muted: false,
                 volume: 1,
                 useCanvas: false,
                 resetOnEnded: false,
@@ -119,7 +119,7 @@
             checkType({
                 loop: 'boolean',
                 delay: 'number',
-                audio: 'boolean',
+                muted: 'boolean',
                 volume: 'number',
                 useCanvas: 'boolean',
                 resetOnEnded: 'boolean',
@@ -361,16 +361,14 @@
             if (!this.config.useCanvas){
 
                 this.video.play();
-                if (this.config.audio === false)
-                    this.video.muted = true;
+                this.video.muted = this.config.muted;
 
             } else {
 
                 this.state.lastTime = Date.now();
                 this.roll();
                 this.canvas.audio.play();
-                if (this.config.audio === false)
-                    this.canvas.audio.muted = true;
+                this.canvas.audio.muted = this.config.muted;
 
             }
         }),
@@ -453,6 +451,23 @@
         // Same reason as above
         off: prototype(function(){
             this.removeEventListener.apply(this, arguments);
+        }),
+
+        muted: prototype({
+            get: function(){
+                return this.config.useCanvas
+                    ? this.canvas.audio.muted
+                    : this.video.muted;
+            },
+            set: function(bool){
+                if (typeof bool !== 'boolean')
+                    return console.error('\'.muted\' property must be boolean.');
+
+                if (this.config.useCanvas)
+                    this.canvas.audio.muted = bool;
+                else
+                    this.video.muted = bool;
+            }
         }),
 
         volume: prototype({

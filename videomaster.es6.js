@@ -32,7 +32,7 @@
                     src: null,
                     loop: false,
                     delay: 0,
-                    audio: true,
+                    muted: false,
                     volume: 1,
                     useCanvas: false,
                     resetOnEnded: false,
@@ -87,7 +87,7 @@
                 checkType({
                     loop: 'boolean',
                     delay: 'number',
-                    audio: 'boolean',
+                    muted: 'boolean',
                     volume: 'number',
                     useCanvas: 'boolean',
                     resetOnEnded: 'boolean',
@@ -183,7 +183,7 @@
                     // Do not replay video if it is paused and progress is controlled by keyboard
                     if (this.state.playing !== true)
                         return;
-                        
+
                     this.goTo(0);
                     this.play();
                 } else {
@@ -325,16 +325,14 @@
             if (!this.config.useCanvas){
 
                 this.video.play();
-                if (this.config.audio === false)
-                    this.video.muted = true;
+                this.video.muted = this.config.muted;
 
             } else {
 
                 this.state.lastTime = Date.now();
                 this.roll();
                 this.canvas.audio.play();
-                if (this.config.audio === false)
-                    this.canvas.audio.muted = true;
+                this.canvas.audio.muted = this.config.muted;
 
             }
         }
@@ -419,8 +417,26 @@
             this.removeEventListener.apply(this, arguments);
         }
 
+        get muted(){
+            return this.config.useCanvas
+                ? this.canvas.audio.muted
+                : this.video.muted;
+        }
+
+        set muted(bool){
+            if (typeof bool !== 'boolean')
+                return console.error('\'.muted\' property must be boolean.');
+
+            if (this.config.useCanvas)
+                this.canvas.audio.muted = bool;
+            else
+                this.video.muted = bool;
+        }
+
         get volume(){
-            return this.config.useCanvas ? this.canvas.audio.volume : this.video.volume;
+            return this.config.useCanvas
+                ? this.canvas.audio.volume
+                : this.video.volume;
         }
 
         set volume(vol){
