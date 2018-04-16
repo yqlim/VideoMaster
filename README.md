@@ -2,7 +2,9 @@
 #### A cross-platform video playing tool for interactive contents.
 
 ### Browser support
-All major browsers equivalent to IE9 or above.
+All major browsers equivalent to IE10 or above.
+
+_IE9 and below are theoretically supported but not tested._
 
 ### How to use it?
 1. Include the javascript in your `<head></head>` section of your HTML, before your page-specific javascript.
@@ -25,7 +27,8 @@ var myVideo = new VideoMaster({
     
     /* OPTIONAL */
     loop: false,                // Loop video onended.
-    audio: true,                // If false, video will not have any audio.
+    muted: false,               // If true, video will not have any audio.
+    volume: 0.5,                // Value ranges from 0 to 1
     objectFit: 'cover',         // Accepted value: 'cover', 'contain'.
     useCanvas: false,           // If true, use canvas element as video for all platform. This is always true on iOS device regardless of the option.
     resetOnEnded: false,        // Reset video frame to first frame onended.
@@ -45,6 +48,8 @@ var myVideo = new VideoMaster({
 - `myVideo.removeEventListener()`: Remove events from it easily.
 - `myVideo.on()`: alias to `.addEventListener()`.
 - `myVideo.off()`: alias to `.removeEventListener()`.
+- `myVideo.muted`: Get or set your video to muted or not muted. Accepts boolean value only.
+- `myVideo.volume`: Get or set your video's volume. Value range from 0 to 1.
 - `myVideo.currentTime`: Get your video's `currentTime`. Use `myVideo.currentTime = seconds` to achieve same effect as `myVideo.goTo(seconds)`.
 - `myVideo.paused`: Check if your video is paused. Returns true if paused.
 - `myVideo.duration`: Returns your video total duration in seconds.
