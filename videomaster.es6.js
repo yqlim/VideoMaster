@@ -2,12 +2,6 @@
 
     'use strict';
 
-    // Works like Object.defineProperties
-    const define = (obj, desc) => {
-        for (const prop in desc)
-            Object.defineProperty(obj, prop, desc[prop]);
-    };
-
     // Create descriptor
     const describe = (value, writable = false, enumerable = false, configurable = false) => ({
         value, writable, enumerable, configurable
@@ -17,7 +11,7 @@
 
         constructor(config){
 
-            define(this, {
+            Object.defineProperties(this, {
                 state: describe({
                     inited: false,
                     sized: false,

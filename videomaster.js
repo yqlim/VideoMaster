@@ -4,9 +4,10 @@
     
     var classCallCheck = function(inst, constr){
         if (!(inst instanceof constr))
-            throw new TypeError('Constructor VideoMaster cannot be invoked without \'new\'');
+            throw new TypeError('Constructor \'VideoMaster\' cannot be invoked without \'new\'');
     };
 
+    // Create descriptor
     var describe = function(value, writable, enumerable, configurable){
         return {
             value: value,
@@ -16,14 +17,7 @@
         };
     };
 
-    var freeze = function(value){
-        return describe(value)
-    };
-
-    var reserve = function(value){
-        return describe(value, true);
-    };
-
+    // Create descriptor for prototype similar to class declaration
     var prototype = function(value){
         return typeof value === 'function'
             ? describe(value, true, false, true)
@@ -59,7 +53,7 @@
 
 
         Object.defineProperties(this, {
-            state: freeze({
+            state: describe({
                 inited: false,
                 sized: false,
                 resized: false,
@@ -68,7 +62,7 @@
                 lastTime: 0,
                 animationFrame: null
             }),
-            config: freeze({
+            config: describe({
                 container: null,
                 src: null,
                 loop: false,
@@ -85,12 +79,12 @@
                 keyboard: true,
                 keyboardFactor: 5
             }),
-            ctx: reserve(null),
-            element: reserve(null),
-            video: reserve(null),
-            canvas: reserve(null),
-            width: reserve(0),
-            height: reserve(0)
+            ctx: describe(null, true),
+            element: describe(null, true),
+            video: describe(null, true),
+            canvas: describe(null, true),
+            width: describe(0, true),
+            height: describe(0, true)
         });
 
 
