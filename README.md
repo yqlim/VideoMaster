@@ -17,12 +17,17 @@ All major browsers equivalent to IE9 and above.
 
 3. In your javascript, you can create a VideoMaster instance by:
 ```javascript
-var myVideo = new VideoMaster('#myContainer', '', {
+// Compulsory arguments
+var container = document.getElementById('myContaienr'); // Or a querySelector string is good too
+var videoSrc = '';                                      // Must have a valid video URL
+
+// Optional configurations and their default values
+var acceptedConfig = {
     loop: false,                // Loop video onended.
     muted: false,               // If true, video will not have any audio.
     volume: 1,                  // Value ranges from 0 to 1
     objectFit: 'contain',       // Accepted value: 'cover', 'contain'.
-    useCanvas: false,           // If true, use canvas element as video for all platform. This is always true on iOS device regardless of the option.
+    useCanvas: false,           // If true, use canvas element as video for all platform.
     forceCanvasOniOS: true      // If false, iOS devices will use their native video player, which defeats the purpose of this tool.
     resetOnEnded: false,        // Reset video frame to first frame onended.
     trigger: 'click',           // Custom user gesture required to start/pause video.
@@ -30,7 +35,9 @@ var myVideo = new VideoMaster('#myContainer', '', {
     shortcut: true,             // If false, keyboard shortcut will be disabled
     seekFactor: 5,              // Indidates the number of seconds the video will rewind/forward from keyboard shortcut
     onEnded: function(){}       // Adds extra onEnded call
-});
+}
+
+var myVideo = new VideoMaster(container, videoSrc, acceptedConfig);
 ```
 
 4. Useful methods:
