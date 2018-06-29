@@ -28,59 +28,81 @@
                 clearTimeout(id);
             };
     }());
-    
-    var classCallCheck = function(inst, constr){
-        if (!(inst instanceof constr))
-            throw new TypeError('Constructor \'VideoMaster\' cannot be invoked without \'new\'');
-    };
 
-    // Create descriptor
-    var describe = function(value, writable, enumerable, configurable){
-        return {
-            value: value,
-            writable: writable || false,
-            enumerable: enumerable || false,
-            configurable: configurable || false
-        };
-    };
+    class VideoMaster {
 
-    // Create descriptor for prototype similar to class declaration
-    var prototype = function(value){
-        return typeof value === 'function'
-            ? describe(value, true, false, true)
-            : {
-                enumerable: false,
-                get: value.get,
-                set: value.set
-            };
-    };
-
-    function VideoMaster(config){
-
-        var key,
-            videoName,
-            videoFormat,
-            canvasName,
-            isiOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+        constructor(container, src, config = {}){
+            const error = msg => `VideoMaster: ${msg}`;
 
 
-        var err = [],
-            error = function(string){
-                err.push(string);
-            },
-            checkType = function(pair){
-                var key;
-                for (key in pair)
-                    if (typeof this.config[key] !== pair[key])
-                        error('Invalid ' + key + ' value. Only ' + pair[key] + ' accepted.');
-            }.bind(this);
+            if (!container)
+                throw new SyntaxError(error('Container is not specified.'));
+
+            if (!src)
+                throw new SyntaxError(error('Video source is not specified.'));
 
 
-        classCallCheck(this, VideoMaster);
+            this.container =
+                typeof container === 'string'
+                    ? document.querySelector(container)
+                    : container;
+
+            if (!this.container)
+                throw new Error(error('Container is not found.'));
+
+            if (Object.getPrototypeOf(this.container.constructor) !== HTMLElement)
+                throw new TypeError(error('Container is not a DOM Element.'));
 
 
-        Object.defineProperties(this, {
-            state: describe({
+            if (typeof src !== 'string')
+                throw new TypeError(error('Video source must be typeof string.'));
+
+            this.src = src;
+
+
+            this.config = {
+                loop: false,
+                muted: false,
+                volume: 1,
+                objectFit: 'contain',
+                useCanvas: false,
+                forceCanvasOniOS: true,
+                resetOnEnded: false,
+                trigger: 'click',
+                canPause: true,
+                shortcut: true,
+                seekFactor: 5,
+                onEnded: function(){}
+            }
+
+            for (const key in config)
+                this.config[key] = config[key];
+
+
+            // Type checking
+            ((pair) => {
+                for (const key in pair)
+                    if (this.config[key] !== undefined
+                        && this.config[key] !== null
+                        && this.config[key].constructor !== pair[key])
+                        throw new TypeError(error(`Invalid "${key}" property value. Only values of ${pair[key].toString().match(/[A-Z]\w{1,}/)[0]} constructor are accepted.`));
+            })({
+                loop: Boolean,
+                muted: Boolean,
+                volume: Number,
+                useCanvas: Boolean,
+                forceCanvasOniOS: Boolean,
+                resetOnEnded: Boolean,
+                trigger: String,
+                canPause: Boolean,
+                objectFit: String,
+                onEnded: Function,
+                shortcut: Boolean,
+                seekFactor: Number
+            });
+
+
+            this.state = {
                 inited: false,
                 sized: false,
                 resized: false,
@@ -88,211 +110,150 @@
                 ended: false,
                 lastTime: 0,
                 animationFrame: null
-            }),
-            config: describe({
-                container: null,
-                src: null,
-                loop: false,
-                delay: 0,
-                muted: false,
-                volume: 1,
-                useCanvas: false,
-                resetOnEnded: false,
-                trigger: 'click',
-                canPause: true,
-                objectFit: 'cover',
-                controls: true,
-                onended: function(){},
-                keyboard: true,
-                keyboardFactor: 5
-            }),
-            ctx: describe(null, true),
-            element: describe(null, true),
-            video: describe(null, true),
-            canvas: describe(null, true),
-            width: describe(0, true),
-            height: describe(0, true)
-        });
+            };
+
+            this.ctx = null;
+            this.video = null;
+            this.canvas = null;
+            this.audio = null;
+            this.width = 0;
+            this.height = 0;
 
 
-        // Use custom config
-        for (key in config)
-            this.config[key] = config[key];
+            if (this.config.forceCanvasOniOS){
+                const isiOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+                this.config.useCanvas = isiOS || this.config.useCanvas;
+            }
 
 
-        try {
+            // Force overflow: hidden to hide overflowing video/canvas edges
+            this.container.style.overflow = 'hidden';
 
-            this.element = 
-                typeof this.config.container === 'string'
-                    ? document.querySelector(this.config.container)
-                    : this.config.container;
-
-            if (!this.element)
-                error('Container is not set or not found.');
-            else if (Object.getPrototypeOf(this.element.constructor) !== HTMLElement)
-                error('Container is not a DOM Element.');
-
-            if (!this.config.src)
-                error('Video source is not set.');
-            else if (typeof this.config.src !== 'string')
-                error('Video source must be a string.');
-
-            checkType({
-                loop: 'boolean',
-                delay: 'number',
-                muted: 'boolean',
-                volume: 'number',
-                useCanvas: 'boolean',
-                resetOnEnded: 'boolean',
-                trigger: 'string',
-                canPause: 'boolean',
-                objectFit: 'string',
-                controls: 'boolean',
-                onended: 'function',
-                keyboard: 'boolean',
-                keyboardFactor: 'number'
-            });
-
-            if (err.length)
-                throw err;
-
-        } catch(err){
-            for (key in err)
-                console.error(err[key]);
-            return;
-        }
+            // Force position to at least relative because video/canvas must use position: absolute
+            if (window.getComputedStyle(this.container).position === 'static')
+                this.container.style.position = 'relative';
 
 
-        // Force canvas on iOS device
-        this.config.useCanvas = isiOS || this.config.useCanvas;
+            // Creates video
+            const videoName = `${this.container.id ? `${this.container.id}-` : ''}VideoMaster`;
+            const videoFormat = this.src.split('.').pop();
+
+            this.video = document.createElement('video');
+            this.video.setAttribute('id', videoName);
+            this.video.style.position = 'absolute';
+            this.video.innerHTML = `<source src="${this.src}" type="video/${videoFormat}">`;
+            this.container.appendChild(this.video);
 
 
-        // Force this.element overflow and position style
-        this.element.style.overflow = 'hidden';
-        if (window.getComputedStyle(this.element).position === 'static')
-            this.element.style.position = 'relative';
+            // Creates canvas if needed
+            if (this.config.useCanvas){
+                // Canvas element to play frames
+                const canvasName = `${videoName}-canvas`;
+                this.canvas = document.createElement('canvas');
+                this.canvas.setAttribute('id', canvasName);
+                this.canvas.style.position = 'absolute';
+                this.container.appendChild(this.canvas);
+
+                // Audio element to play sound
+                this.audio = document.createElement('audio');
+                this.audio.innerHTML = this.video.innerHTML;
+                this.container.appendChild(this.audio, this.video);
+
+                this.audio.load();
+                this.ctx = this.canvas.getContext('2d');
+
+                // Event Listener to reflect video frame on canvas 
+                this.video.addEventListener('timeupdate', this.drawFrame.bind(this));
+
+                // Draw first frame (cover frame)
+                this.video.addEventListener('loadeddata', this.drawFrame.bind(this));
+            }
 
 
-        // Creates video element
-        videoName = (this.element.id ? this.element.id + '-' : '') + 'VideoMaster';
-        videoFormat = this.config.src.split('.').pop();
-
-        this.video = document.createElement('video');
-        this.video.setAttribute('id', videoName);
-        this.video.style.position = 'absolute';
-        this.video.innerHTML = '<source src="' + this.config.src + '" type="video/' + videoFormat + '">';
-        this.element.appendChild(this.video);
+            this.volume = this.config.volume;
 
 
-        // Creates canvas element if needed
-        // In some system (i.e. iOS), this will not trigger system default video playing behaviour
-        if (this.config.useCanvas){
-            // Canvas element to play frames
-            canvasName = videoName + '-canvas';
-            this.canvas = document.createElement('canvas');
-            this.canvas.setAttribute('id', canvasName);
-            this.canvas.style.position = 'absolute';
-            this.element.appendChild(this.canvas);
+            this.video.addEventListener('loadedmetadata', this.updateSize.bind(this));
+            this.video.addEventListener('ended', onEnded.bind(this));
+            this.video.addEventListener('ended', this.config.onEnded.bind(this));
 
-            // Audio element to play sound
-            this.canvas.audio = document.createElement('audio');
-            this.canvas.audio.innerHTML = this.video.innerHTML;
-            this.element.insertBefore(this.canvas.audio, this.video);
+            this.container.addEventListener(this.config.trigger, this.init.bind(this));
+            window.addEventListener('resize', this.updateSize.bind(this));
 
-            this.canvas.audio.load();
-            this.ctx = this.canvas.getContext('2d');
-
-            // To play frames
-            this.video.addEventListener('timeupdate', this.drawFrame.bind(this));
-            this.video.addEventListener('canplay', this.drawFrame.bind(this));
-        }
+            // If needed to bind keyboard shortcut
+            if (this.config.shortcut)
+                window.addEventListener('keydown', onKeyPress.bind(this));
 
 
-        this.volume = this.config.volume;
+            this.video.load();
 
 
-        this.video.addEventListener('loadedmetadata', onMetaLoaded.bind(this));
-        this.video.addEventListener('ended', onVideoEnded.bind(this));
-        this.video.addEventListener('ended', this.config.onended.bind(this));
-        this.element.addEventListener(this.config.trigger, this.init.bind(this));
-        window.addEventListener('resize', this.updateSize.bind(this));
+            function onEnded(){
+                this.state.ended = true;
 
-        if (this.config.keyboard === true)
-            document.body.addEventListener('keydown', onKeyPress.bind(this));
+                if (this.config.loop)
+                    this.play();
 
+                else {
+                    this.state.playing = false;
+    
+                    if (this.config.resetOnEnded)
+                        this.goTo(0);
+                }
+            }
 
-        this.video.load();
-
-
-        function onMetaLoaded(){
-            this.updateSize();
-        }
-
-        function onVideoEnded(){
-            this.state.ended = true;
-
-            if (this.config.loop === true){
-                // Do not replay video if it is paused and progress is controlled by keyboard
-                if (this.state.playing !== true)
+            function onKeyPress(e){
+                // Keyboard cannot control video before video is triggered.
+                if (!this.state.inited)
                     return;
 
-                this.goTo(0);
-                this.play();
-            } else {
-                this.state.playing = false;
-                if (this.config.resetOnEnded === true)
-                    this.goTo(0);
+                switch (e.which){
+                    // Space bar
+                    case 32:
+                        this.togglePlay();
+                        break;
+
+                    // Left arrow
+                    case 37:
+                        this.goTo(this.currentTime - this.config.seekFactor);
+                        break;
+
+                    // Right arrow
+                    case 39:
+                        this.goTo(this.currentTime + this.config.seekFactor);
+                        break;
+                }
             }
         }
 
-        function onKeyPress(e){
-            // Keyboard cannot control video before video is triggered.
-            if (this.state.inited !== true)
-                return;
-
-            if (e.which === 32)
-                this.togglePlay();
-            else if (e.which === 37)
-                this.goTo(this.currentTime - this.config.keyboardFactor);
-            else if (e.which === 39)
-                this.goTo(this.currentTime + this.config.keyboardFactor);
-        }
-
-    }
-
-    Object.defineProperties(VideoMaster.prototype, {
-
-        init: prototype(function(){
+        init(){
             if (!this.state.sized)
                 this.updateSize();
 
-            if (this.config.canPause === true && this.state.inited){
-                this.togglePlay();
-                return;
-            }
+            if (this.config.canPause && this.state.inited)
+                return this.togglePlay();
 
             if (this.config.useCanvas)
                 this.video.style.display = 'none';
 
             this.state.inited = true;
             this.play();
-        }),
+        }
 
-        updateSize: prototype(function(){
-            var rw, rh, rt, rl, scale, t, l;
-
-            var cw = this.element.clientWidth,
-                ch = this.element.clientHeight,
-                vw = this.video.videoWidth,
-                vh = this.video.videoHeight;
-
-            var adjustLeft = false,
-                adjustTop = false;
-
-            if (this.video.videoHeight === 0){
+        // No comment because I lazy
+        updateSize(){
+            if (!this.video.videoHeight){
                 this.state.resized = true;
                 return;
             }
+
+            let rw, rh, scale, t, l;
+            const cw = this.container.clientWidth,
+                  ch = this.container.clientHeight,
+                  vw = this.video.videoWidth,
+                  vh = this.video.videoHeight;
+
+            let [adjustLeft, adjustTop] = [false, false];
 
             this.width = cw;
             this.height = 
@@ -343,8 +304,7 @@
     
             if (adjustTop)
                 t = (ch - rh)/2;
-    
-            if (adjustLeft)
+            else if (adjustLeft)
                 l = (cw - rw)/2;
 
             if (!this.config.useCanvas)
@@ -366,9 +326,9 @@
                     element.style.height = rh + 'px';
                 }
             }
-        }),
+        }
 
-        play: prototype(function(){
+        play(){
             this.state.playing = true;
 
             if (!this.state.sized)
@@ -379,49 +339,50 @@
                 this.goTo(0);
             }
 
-            if (!this.config.useCanvas){
+            if (this.config.useCanvas){
+
+                this.state.lastTime = Date.now();
+                this.roll();
+                this.audio.play();
+                this.audio.muted = this.config.muted;
+
+            } else {
 
                 this.video.play();
                 this.video.muted = this.config.muted;
 
-            } else {
-
-                this.state.lastTime = Date.now();
-                this.roll();
-                this.canvas.audio.play();
-                this.canvas.audio.muted = this.config.muted;
-
             }
-        }),
+        }
 
-        pause: prototype(function(){
-            if (this.config.canPause === false) return;
+        pause(){
+            if (!this.config.canPause)
+                return;
 
             this.state.playing = false;
 
             if (!this.config.useCanvas)
                 this.video.pause();
             else
-                this.canvas.audio.pause();
-        }),
+                this.audio.pause();
+        }
 
-        togglePlay: prototype(function(){
-            if (!this.state.playing)
-                this.play();
-            else
+        togglePlay(){
+            if (this.state.playing)
                 this.pause();
-        }),
+            else
+                this.play();
+        }
 
-        goTo: prototype(function(second){
-            this.video.currentTime = second;
+        goTo(s){
+            this.video.currentTime = s;
             if (this.config.useCanvas)
                 this.sync();
-        }),
+        }
 
-        // Roll as in roll the frames like a movie film
-        roll: prototype(function(){
-            var time = Date.now(),
-                elapsed = (time - this.state.lastTime)/1000;
+        // Roll as in roll the frames like a film
+        roll(){
+            const time = Date.now();
+            const elapsed = (time - this.state.lastTime)/1000;
 
             // Move video frame forward
             if (elapsed >= (1/30)){
@@ -429,10 +390,7 @@
                 this.state.lastTime = time;
 
                 // Sync audio with current video frame
-                if (
-                    this.canvas.audio &&
-                    Math.abs(this.canvas.audio.currentTime - this.video.currentTime) > 0.3
-                )
+                if (Math.abs(this.audio.currentTime - this.video.currentTime) > 0.3)
                     this.sync();
             }
 
@@ -441,97 +399,99 @@
                 this.state.animationFrame = window.requestAnimationFrame(this.roll.bind(this));
             else
                 window.cancelAnimationFrame(this.state.animationFrame);
-        }),
+        }
 
-        sync: prototype(function(){
-            this.canvas.audio.currentTime = this.video.currentTime;
-        }),
+        sync(){
+            this.audio.currentTime = this.video.currentTime;
+        }
 
-        drawFrame: prototype(function(){
-            // Draw the current frame onto canvas
+        drawFrame(){
             this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
-        }),
+        }
 
-        // To imitate event listener binding, so you can call these methods to the instance instead of the object
-        addEventListener: prototype(function(){
-            var elem = this.config.useCanvas ? this.canvas : this.video;
+        /**
+         * To imitate event listener binding,
+         * so you can call these methods directly on the instance
+         */
+        addEventListener(){
+            const elem = this.config.useCanvas ? this.canvas : this.video;
             elem.addEventListener.apply(elem, arguments);
-        }),
+        }
 
-        // Same reason as above
-        removeEventListener: prototype(function(){
-            var elem = this.config.useCanvas ? this.canvas : this.video;
+        removeEventListener(){
+            const elem = this.config.useCanvas ? this.canvas : this.video;
             elem.removeEventListener.apply(elem, arguments);
-        }),
+        }
 
-        // Just to be convenient to jQuery or other library users
-        on: prototype(function(){
+        /**
+         * Just to be convenient to jQuery or other library users
+         */
+        on(){
             this.addEventListener.apply(this, arguments);
-        }),
+        }
 
-        // Same reason as above
-        off: prototype(function(){
+        off(){
             this.removeEventListener.apply(this, arguments);
-        }),
+        }
 
-        muted: prototype({
-            get: function(){
-                return this.config.useCanvas
-                    ? this.canvas.audio.muted
-                    : this.video.muted;
-            },
-            set: function(bool){
-                if (typeof bool !== 'boolean')
-                    return console.error('\'.muted\' property must be boolean.');
+        get muted(){
+            return this.config.useCanvas
+                ? this.audio.muted
+                : this.video.muted;
+        }
 
-                if (this.config.useCanvas)
-                    this.canvas.audio.muted = bool;
-                else
-                    this.video.muted = bool;
-            }
-        }),
+        set muted(bool){
+            if (typeof bool !== 'boolean')
+                throw new TypeError('VideoMaster: Must use boolean to set ".muted" property.');
 
-        volume: prototype({
-            get: function(){
-                return this.config.useCanvas
-                    ? this.canvas.audio.volume
-                    : this.video.volume;
-            },
-            set: function(vol){
-                vol = parseFloat(vol);
-    
-                if (isNaN(vol) || vol > 1 || vol < 0)
-                    return console.error('Volume must be a number between 0 to 1');
-    
-                if (this.config.useCanvas)
-                    this.canvas.audio.volume = vol;
-                else
-                    this.video.volume = vol;
-            }
-        }),
+            if (this.config.useCanvas)
+                this.audio.muted = bool;
+            else
+                this.video.muted = bool;
+        }
 
-        currentTime: prototype({
-            get: function(){
-                return this.video.currentTime;
-            },
-            set: function(second){
-                this.goTo(second);
-            }
-        }),
+        get volume(){
+            return this.config.useCanvas
+                ? this.audio.volume
+                : this.video.volume;
+        }
 
-        paused: prototype({
-            get: function(){
-                return !this.state.playing;
-            }
-        }),
+        set volume(vol){
+            if (typeof vol !== 'number')
+                throw new TypeError('VideoMaster: "volume" property must be a number between 0 to 1.');
 
-        duration: prototype({
-            get: function(){
-                return this.video.duration;
-            }
-        })
+            if (vol < 0 || vol > 1)
+                throw new RangeError('VideoMaster: "volume" property must be a number between 0 to 1.');
 
-    });
+            if (this.config.useCanvas)
+                this.audio.volume = vol;
+            else
+                this.video.volume = vol;
+        }
+
+        get currentTime(){
+            return this.video.currentTime;
+        }
+
+        set currentTime(s){
+            if (typeof s !== 'number')
+                throw new TypeError('VideoMaster: "currentTime" property must be a number.');
+
+            if (s > this.video.duration)
+                throw new RangeError('VideoMaster: New "currentTime" value exceeded video duration.');
+
+            this.goTo(s);
+        }
+
+        get paused(){
+            return !this.state.playing;
+        }
+
+        get duration(){
+            return this.video.duration;
+        }
+
+    }
 
     window.VideoMaster = VideoMaster;
 

@@ -1,41 +1,35 @@
 ## VideoMaster
-#### A cross-platform video playing tool for interactive contents.
+#### A cross-platform video playing tool that enables creative interactions with videos.
 
 ### Browser support
-All major browsers equivalent to IE10 or above.
-
-_IE9 and below are theoretically supported but not tested._
+All major browsers equivalent to IE9 and above.
 
 ### How to use it?
 1. Include the javascript in your `<head></head>` section of your HTML, before your page-specific javascript.
-```
+```html
 <script src="videomaster.js"></script>
 ```
 
 2. Be sure to have an element that will contain your video. For example:
-```
+```html
 <div id="myContainer"></div>
 ```
 
 3. In your javascript, you can create a VideoMaster instance by:
-```
-var myVideo = new VideoMaster({
-    /* compulsory*/
-    src: '',                                               // Path to video.
-    container: '#myContainer',                             // Either Selector of parent element
-    // container: document.getElementById('myContainer'),  // Or a DOM Element Node
-    
-    /* OPTIONAL */
+```javascript
+var myVideo = new VideoMaster('#myContainer', '', {
     loop: false,                // Loop video onended.
     muted: false,               // If true, video will not have any audio.
-    volume: 0.5,                // Value ranges from 0 to 1
-    objectFit: 'cover',         // Accepted value: 'cover', 'contain'.
+    volume: 1,                  // Value ranges from 0 to 1
+    objectFit: 'contain',       // Accepted value: 'cover', 'contain'.
     useCanvas: false,           // If true, use canvas element as video for all platform. This is always true on iOS device regardless of the option.
+    forceCanvasOniOS: true      // If false, iOS devices will use their native video player, which defeats the purpose of this tool.
     resetOnEnded: false,        // Reset video frame to first frame onended.
     trigger: 'click',           // Custom user gesture required to start/pause video.
     canPause: true,             // If false, video cannot be paused.
-    keyboard: true,             // If false, keyboard shortcut will be disabled
-    keyboardFactor: 5           // Indidates the number of seconds the video will rewind/forward from keyboard shortcut
+    shortcut: true,             // If false, keyboard shortcut will be disabled
+    seekFactor: 5,              // Indidates the number of seconds the video will rewind/forward from keyboard shortcut
+    onEnded: function(){}       // Adds extra onEnded call
 });
 ```
 
