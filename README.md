@@ -34,24 +34,24 @@ var myVideo = new VideoMaster('#myContainer', '', {
 ```
 
 4. Useful methods:
-- `myVideo.play()`: Plays the video.
-- `myVideo.pause()`: Pauses the video.
-- `myVideo.togglePlay()`: Toggle video play/pause.
-- `myVideo.goTo(seconds)`: Change your video `currentTime` to specified time in seconds.
-- `myVideo.addEventListener()`: Attach events to it easily.
-- `myVideo.removeEventListener()`: Remove events from it easily.
-- `myVideo.on()`: alias to `.addEventListener()`.
-- `myVideo.off()`: alias to `.removeEventListener()`.
-- `myVideo.muted`: Get or set your video to muted or not muted. Accepts boolean value only.
-- `myVideo.volume`: Get or set your video's volume. Value range from 0 to 1.
-- `myVideo.currentTime`: Get your video's `currentTime`. Use `myVideo.currentTime = seconds` to achieve same effect as `myVideo.goTo(seconds)`.
-- `myVideo.paused`: Check if your video is paused. Returns true if paused.
-- `myVideo.duration`: Returns your video total duration in seconds.
+    - `myVideo.play()`: Plays the video.
+    - `myVideo.pause()`: Pauses the video.
+    - `myVideo.togglePlay()`: Toggle video play/pause.
+    - `myVideo.goTo(seconds)`: Change your video `currentTime` to specified time in seconds.
+    - `myVideo.addEventListener()`: Attach events to it easily.
+    - `myVideo.removeEventListener()`: Remove events from it easily.
+    - `myVideo.on()`: alias to `.addEventListener()`.
+    - `myVideo.off()`: alias to `.removeEventListener()`.
+    - `myVideo.muted`: Get or set your video to muted or not muted. Accepts boolean value only.
+    - `myVideo.volume`: Get or set your video's volume. Value range from 0 to 1.
+    - `myVideo.currentTime`: Get your video's `currentTime`. Use `myVideo.currentTime = seconds` to achieve same effect as `myVideo.goTo(seconds)`.
+    - `myVideo.paused`: Check if your video is paused. Returns true if paused.
+    - `myVideo.duration`: Returns your video total duration in seconds.
 
 5. Keyboard shortcuts:
-- `space` key: Toggle play/pause.
-- `left` arrow key: Rewind video to _n_ seconds before.
-- `right` arrow key: Forward video to _n_ seconds after.
+    - `space` key: Toggle play/pause.
+    - `left` arrow key: Rewind video to _n_ seconds before.
+    - `right` arrow key: Forward video to _n_ seconds after.
 
 ### When can I use it?
 You can use it when:
