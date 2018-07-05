@@ -57,7 +57,7 @@
             if (typeof src !== 'string')
                 throw new TypeError(error('Video source must be typeof string.'));
 
-            this.src = src;
+            this.source = src;
 
 
             this.config = {
@@ -136,12 +136,11 @@
 
             // Creates video
             const videoName = `${this.container.id ? `${this.container.id}-` : ''}VideoMaster`;
-            const videoFormat = this.src.split('.').pop();
 
             this.video = document.createElement('video');
             this.video.setAttribute('id', videoName);
             this.video.style.position = 'absolute';
-            this.video.innerHTML = `<source src="${this.src}" type="video/${videoFormat}">`;
+            this.video.innerHTML = `<source src="${this.source}">`;
             this.container.appendChild(this.video);
 
 
@@ -432,6 +431,50 @@
 
         off(){
             this.removeEventListener.apply(this, arguments);
+        }
+
+        get src(){
+            return this.source;
+        }
+
+        set src(src){
+            if (typeof src !== 'string')
+                throw new TypeError('VideoMaster: Video source must be typeof string.');
+
+            this.source = src;
+            this.container.removeChild(this.video);
+            const videoName = `${this.container.id ? `${this.container.id}-` : ''}VideoMaster`;
+            this.video = document.createElement('video');
+            this.video.setAttribute('id', videoName);
+            this.video.style.position = 'absolute';
+            this.video.innerHTML = `<source src="${this.source}">`;
+            this.container.appendChild(this.video);
+
+            if (this.canvas){
+                this.container.removeChild(this.audio);
+                this.audio = document.createElement('audio');
+                this.audio.innerHTML = this.video.innerHTML;
+                this.container.appendChild(this.audio, this.video);
+                this.audio.load();
+            }
+
+            this.video.addEventListener('loadedmetadata', this.updateSize.bind(this));
+            this.video.addEventListener('ended', onEnded.bind(this));
+            this.video.addEventListener('ended', this.config.onEnded.bind(this));
+            this.video.load();
+            function onEnded(){
+                this.state.ended = true;
+
+                if (this.config.loop)
+                    this.play();
+
+                else {
+                    this.state.playing = false;
+    
+                    if (this.config.resetOnEnded)
+                        this.goTo(0);
+                }
+            }
         }
 
         get muted(){
