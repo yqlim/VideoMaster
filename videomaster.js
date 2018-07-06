@@ -456,6 +456,8 @@
                 this.audio.innerHTML = this.video.innerHTML;
                 this.container.appendChild(this.audio, this.video);
                 this.audio.load();
+                this.video.addEventListener('timeupdate', this.drawFrame.bind(this));
+                this.video.addEventListener('loadeddata', this.drawFrame.bind(this));
             }
 
             this.video.addEventListener('loadedmetadata', this.updateSize.bind(this));
