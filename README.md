@@ -1,3 +1,8 @@
+## *Major News: This will not be actively developed anymore.*
+*This is due to the added `playsinline` attribute of `<video>` element in iOS devices. Read more about it on [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/) and [Apple](https://developer.apple.com/documentation/webkitjs/htmlvideoelement/2528111-playsinline).*
+
+*This will still be useful for you to manipulate video playback with JavaScript, such as arrow keys seeking, spacebar play/pause, video loop, etc..*
+
 ## VideoMaster
 #### A cross-platform video playing tool that enables creative interactions with videos.
 
