@@ -1,0 +1,35 @@
+{
+  "name": "videomaster",
+  "version": "1.0.0",
+  "description": "An open-sourced JavaScript video player aims to implement consistent video playback experience across all devices, enabling you to do whole lot of things to control or change the video playing experience.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yqlim/VideoMaster.git"
+  },
+  "keywords": [
+    "video",
+    "videoplayback",
+    "playback",
+    "videoplayer",
+    "player",
+    "canvasplayer"
+  ],
+  "author": "Yong Quan Lim",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yqlim/VideoMaster/issues"
+  },
+  "homepage": "https://github.com/yqlim/VideoMaster#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.0.0"
+  }
+}

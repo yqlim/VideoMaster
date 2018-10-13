@@ -1,0 +1,25 @@
+{
+    "presets": [
+        [
+            "@babel/env",
+            {
+                "targets": {
+                    "edge": "12",
+                    "firefox": "11",
+                    "chrome": "22",
+                    "safari": "6",
+                    "ios": "6.1",
+                    "ie": "10",
+                    "opera": "15",
+                    "android": "4.4",
+                    "uc": "11.8"
+                },
+                "useBuiltIns": "usage",
+                "forceAllTransforms": true
+            }
+        ]
+    ],
+    "plugins": [
+
+    ]
+}
